@@ -1,140 +1,151 @@
-# Steam Pulse API 🎮
+# Steam Pulse API
 
-![Version](https://img.shields.io/badge/version-0.1.0-blue.svg) ![Python](https://img.shields.io/badge/python-3.11+-yellow.svg) ![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-green.svg) ![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg) ![Python](https://img.shields.io/badge/python-3.11+-yellow.svg) ![FastAPI](https://img.shields.io/badge/FastAPI-0.129.0-green.svg) ![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)
 
-**Steam Pulse** is a high-performance REST API designed for game developers, market analysts, and serious gamers. It provides real-time sentiment analysis, keyword extraction, and "Buy/Wait/Avoid" verdicts for any game on the Steam store.
-
-Unlike standard scrapers that just return raw text, Steam Pulse uses advanced NLP (Natural Language Processing) to distill thousands of reviews into actionable data points, helping you understand *why* a game is succeeding or failing.
+**Steam Pulse** is a REST API that provides real-time sentiment analysis for any game on the Steam store. It returns a sentiment score, a `BUY / WAIT / AVOID` verdict, and the top keywords from positive and negative reviews — distilled from real player reviews using NLP.
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
-* **Real-Time Sentiment Analysis:** Instantly gauge the mood of the player base with a 0-100 sentiment score.
-* **"The Verdict" Engine:** Returns a clear `BUY`, `WAIT`, or `AVOID` recommendation based on recent review trends (e.g., detecting "review bombs" vs. genuine technical issues).
-* **Keyword Extraction:** Automatically identifies the most common praises (e.g., "Soundtrack", "Story") and complaints (e.g., "Optimization", "Microtransactions").
-* **Smart Caching:** Built-in caching layer to ensure fast response times for popular games and minimize load on Steam's servers.
-* **JSON Output:** Clean, standardized JSON responses ready for integration into dashboards, Discord bots, or Excel sheets.
-
----
-
-## 🛠️ Tech Stack
-
-* **Core Framework:** [FastAPI](https://fastapi.tiangolo.com/) (Python) - chosen for its speed and automatic documentation.
-* **Data Processing:** `Pandas` & `NLTK` / `VADER` - for efficient text analysis and sentiment scoring.
-* **Scraping/Fetching:** `httpx` - for asynchronous HTTP requests to Steam's public storefront.
-* **Caching:** `Redis` (Production) / In-Memory (Dev) - prevents redundant processing of the same game ID.
-* **Deployment:** Dockerized for easy deployment on Render, Railway, or AWS.
+- **Sentiment Score (0–100):** Quantifies the current mood of the player base.
+- **Verdict Engine:** Returns `BUY`, `WAIT`, or `AVOID` based on recent review trends.
+- **Keyword Extraction:** Top words from positive and negative reviews (pros/cons).
+- **Game Title:** Returns the official game name alongside the App ID.
+- **Smart Caching:** In-memory cache with a 1-hour TTL keeps responses fast and avoids hammering Steam's servers.
+- **Clean JSON output:** Ready to plug into dashboards, Discord bots, or any frontend.
 
 ---
 
-## 📦 Installation & Setup
+## Tech Stack
+
+- **Framework:** [FastAPI](https://fastapi.tiangolo.com/) — chosen for speed and automatic `/docs` UI
+- **NLP:** `NLTK` / `VADER` — sentiment scoring and keyword extraction
+- **HTTP:** `requests` — fetches reviews and game details from Steam's public API
+- **Caching:** In-memory Python dict with timestamp-based TTL
+- **Deployment:** [Render](https://render.com)
+
+---
+
+## Installation & Setup
 
 ### Prerequisites
-* Python 3.10 or higher
-* `pip` (Python Package Manager)
+- Python 3.10+
+- `pip`
 
-### 1. Clone the Repository
+### 1. Clone the repository
 ```bash
-git clone [https://github.com/yourusername/steam-pulse-api.git](https://github.com/yourusername/steam-pulse-api.git)
+git clone https://github.com/yourusername/steam-pulse-api.git
 cd steam-pulse-api
 ```
 
-### 2. Create a Virtual Environment
+### 2. Create a virtual environment
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+python -m venv .venv
+.venv\Scripts\activate       # Windows
+source .venv/bin/activate    # macOS / Linux
 ```
 
-### 3. Install Dependencies
+### 3. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Run the Server
+### 4. Run the server
 ```bash
 uvicorn main:app --reload
 ```
+
 The API will be available at `http://127.0.0.1:8000`.
+Interactive docs at `http://127.0.0.1:8000/docs`.
 
 ---
 
-## 📖 API Reference
+## API Reference
 
-### 1. Health Check
-Ensure the API is running.
+### Health Check
 
-* **Endpoint:** `GET /`
-* **Response:**
-    ```json
-    {
-      "status": "online",
-      "message": "Steam Pulse API is running."
-    }
-    ```
+**`GET /`**
 
-### 2. Analyze a Game
-Get the full sentiment report for a specific Steam Game ID.
-
-* **Endpoint:** `GET /analyze/{game_id}`
-* **Parameters:**
-    * `game_id` (integer): The Steam App ID (e.g., `1091500` for Cyberpunk 2077).
-* **Example Request:**
-    ```bash
-    curl [http://127.0.0.1:8000/analyze/1091500](http://127.0.0.1:8000/analyze/1091500)
-    ```
-* **Example Response:**
-    ```json
-    {
-      "game_id": 1091500,
-      "title": "Cyberpunk 2077",
-      "verdict": "BUY",
-      "sentiment_score": 88,
-      "review_count_analyzed": 100,
-      "keywords": {
-        "pros": ["story", "graphics", "characters"],
-        "cons": ["bugs", "police_system"]
-      },
-      "timestamp": "2024-05-20T14:30:00Z"
-    }
-    ```
+```json
+{
+  "status": "online",
+  "message": "Steam Pulse API is running."
+}
+```
 
 ---
 
-## 🗺️ Roadmap
+### Analyze a Game
 
-### Phase 1: MVP (Current)
-- [x] Basic sentiment analysis using VADER.
-- [x] Fetching reviews via Steam public API.
-- [x] Simple caching to prevent rate limits.
+**`GET /analyze/{game_id}`**
 
-### Phase 2: Enhanced Intelligence (Coming Soon)
-- [ ] **AI Summarization:** Integrate LLMs (Gemini/GPT-4) to write a 2-sentence summary of *why* people like/dislike the game.
-- [ ] **Historical Tracking:** Database integration to track sentiment trends over time (e.g., "Did the patch fix the review score?").
-- [ ] **Competitor Comparison:** Endpoint to compare two game IDs side-by-side.
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `game_id` | integer | Steam App ID (e.g. `1091500` for Cyberpunk 2077) |
 
-### Phase 3: Monetization
-- [ ] API Key authentication via API Gateway.
-- [ ] Tiered usage limits (Free vs. Pro).
-- [ ] Webhook support for alerts (e.g., "Notify me if sentiment drops below 50%").
+**Example request:**
+```bash
+curl http://127.0.0.1:8000/analyze/1091500
+```
+
+**Example response:**
+```json
+{
+  "game_id": 1091500,
+  "title": "Cyberpunk 2077",
+  "success": true,
+  "cached": false,
+  "data": {
+    "verdict": "BUY",
+    "sentiment_score": 88,
+    "keywords": {
+      "pros": ["story", "graphics", "world", "characters", "soundtrack"],
+      "cons": ["bugs", "crashes", "performance", "police", "ai"]
+    },
+    "raw_avg_compound": 0.7234,
+    "total_reviews_analyzed": 50,
+    "positive_reviews": 42,
+    "negative_reviews": 8
+  }
+}
+```
+
+**Verdict thresholds:**
+
+| Score | Verdict |
+|-------|---------|
+| 75–100 | `BUY` |
+| 41–74 | `WAIT` |
+| 0–40 | `AVOID` |
 
 ---
 
-## 🤝 Contributing
+## Roadmap
 
-Contributions are welcome! Please fork the repository and submit a pull request.
+### Phase 1 — MVP (Complete)
+- [x] Sentiment analysis with VADER
+- [x] Fetch reviews from Steam's public API
+- [x] BUY / WAIT / AVOID verdict engine
+- [x] Keyword extraction (pros/cons)
+- [x] Game title in response
+- [x] In-memory caching
 
-1.  Fork the Project
-2.  Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3.  Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
-4.  Push to the Branch (`git push origin feature/AmazingFeature`)
-5.  Open a Pull Request
+### Phase 2 — Enhanced Intelligence
+- [ ] AI-generated summary (LLM) of why players like/dislike the game
+- [ ] Historical tracking — sentiment trends over time
+- [ ] Side-by-side comparison of two games
+
+### Phase 3 — Monetization
+- [ ] API key authentication
+- [ ] Tiered usage limits (Free / Pro)
+- [ ] Webhook alerts (e.g. notify when sentiment drops below a threshold)
 
 ---
 
-## 📄 License
+## License
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distributed under the MIT License.
 
 ---
 
