@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
-# Import your modules
 import core_logic
 import caching
 
@@ -13,10 +12,9 @@ app = FastAPI(
     version="1.2.0"
 )
 
-# --- CONFIGURATION ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,6 +36,7 @@ class SentimentAnalysis(BaseModel):
 
 class GameResponse(BaseModel):
     game_id: int
+    title: Optional[str] = None
     success: bool
     cached: bool
     data: Optional[SentimentAnalysis] = None
@@ -57,36 +56,40 @@ def analyze_game(game_id: int):
     Checks cache first to avoid rate limits.
     """
     # 1. CHECK CACHE FIRST
-    cached_data = caching.get_cached_data(game_id)
-    if cached_data:
+    cached = caching.get_cached_data(game_id)
+    if cached:
         return {
             "game_id": game_id,
+            "title": cached["title"],
             "success": True,
             "cached": True,
-            "data": cached_data
+            "data": cached["analysis"]
         }
 
-    # 2. IF NOT IN CACHE, FETCH FROM STEAM
+    # 2. FETCH TITLE AND REVIEWS FROM STEAM
     print(f"Fetching fresh data for {game_id}...")
+    title = core_logic.fetch_game_title(game_id)
     reviews = core_logic.fetch_reviews(game_id, num_reviews=50)
-    
+
     if not reviews:
         return {
             "game_id": game_id,
+            "title": title,
             "success": False,
             "cached": False,
             "error": "Game not found or no reviews available."
         }
-    
+
     # 3. ANALYZE
     analysis = core_logic.analyze_sentiment(reviews)
-    
-    # 4. SAVE TO CACHE
-    caching.save_to_cache(game_id, analysis)
-    
+
+    # 4. SAVE TO CACHE (title + analysis together)
+    caching.save_to_cache(game_id, {"title": title, "analysis": analysis})
+
     # 5. RETURN RESPONSE
     return {
         "game_id": game_id,
+        "title": title,
         "success": True,
         "cached": False,
         "data": analysis

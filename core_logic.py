@@ -37,6 +37,22 @@ GAME_STOP_WORDS = {
 # Combine them
 ALL_STOP_WORDS = STOP_WORDS.union(GAME_STOP_WORDS)
 
+def fetch_game_title(game_id):
+    """
+    Fetches the game title from the Steam store API.
+    """
+    url = f"https://store.steampowered.com/api/appdetails?appids={game_id}"
+    try:
+        response = requests.get(url, headers={'User-Agent': 'SteamPulseAPI/0.1'})
+        response.raise_for_status()
+        data = response.json()
+        if data[str(game_id)]['success']:
+            return data[str(game_id)]['data']['name']
+        return None
+    except Exception as e:
+        print(f"Error fetching title: {e}")
+        return None
+
 def fetch_reviews(game_id, num_reviews=50):
     """
     Fetches the most recent 'helpful' reviews from a Steam App ID.
