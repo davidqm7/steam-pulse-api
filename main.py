@@ -1,10 +1,13 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 
 import core_logic
 import caching
+
+RAPIDAPI_SECRET = os.environ.get("RAPIDAPI_PROXY_SECRET", "")
 
 app = FastAPI(
     title="Steam Pulse API",
@@ -50,12 +53,16 @@ def home():
     return {"status": "online", "message": "Steam Pulse API is running."}
 
 @app.get("/analyze/{game_id}", response_model=GameResponse)
-def analyze_game(game_id: int):
+def analyze_game(game_id: int, x_rapidapi_proxy_secret: str = Header(None)):
     """
     Analyzes the sentiment of a Steam game.
     Checks cache first to avoid rate limits.
     """
-    # 1. CHECK CACHE FIRST
+    # 1. VERIFY REQUEST CAME FROM RAPIDAPI
+    if x_rapidapi_proxy_secret != RAPIDAPI_SECRET:
+        raise HTTPException(status_code=403, detail="Unauthorized access")
+
+    # 2. CHECK CACHE FIRST
     cached = caching.get_cached_data(game_id)
     if cached:
         return {
